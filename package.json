@@ -1,0 +1,11 @@
+{
+  "name": "quizmaster-platform",
+  "version": "1.0.0",
+  "description": "QuizMaster - Quiz Management & Online Assessment Platform",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "backend": "npm run dev --prefix backend",
+    "frontend": "npm run dev --prefix frontend"
+  }
+}
