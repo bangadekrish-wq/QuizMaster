@@ -2,8 +2,12 @@ import axios from 'axios';
 
 const defaultDevUrl = 'http://localhost:5000/api';
 const defaultProdUrl = 'https://quizmaster-7ot7.onrender.com/api';
-const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? defaultProdUrl : defaultDevUrl);
-const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '');
+let envUrl = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? defaultProdUrl : defaultDevUrl);
+envUrl = envUrl.trim().replace(/\/+$/, '');
+if (!envUrl.endsWith('/api')) {
+  envUrl += '/api';
+}
+const API_BASE_URL = envUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,

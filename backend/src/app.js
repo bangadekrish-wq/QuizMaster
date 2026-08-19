@@ -24,8 +24,11 @@ const app = express();
 app.use(helmet());
 
 // CORS Configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
+const rawFrontendUrl = process.env.FRONTEND_URL || '';
+const cleanFrontendUrl = rawFrontendUrl.trim().replace(/\/+$/, '');
+
+const staticAllowedOrigins = [
+  cleanFrontendUrl,
   'https://quiz-master-green-six.vercel.app',
   'https://quizmaster-7ot7.onrender.com',
 ].filter(Boolean);
@@ -33,23 +36,29 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (such as mobile apps, curl, server-to-server)
+      // Allow requests with no origin (such as mobile apps, curl, Postman, server-to-server)
       if (!origin) return callback(null, true);
 
-      // Sanitize trailing slashes for clean matching
-      const normalizedOrigin = origin.replace(/\/+$/, '');
-      
+      const normalizedOrigin = origin.trim().replace(/\/+$/, '');
+
+      // Check if origin matches allowed origins, localhost, or Vercel quiz-master project domains
       const isAllowed =
-        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-        allowedOrigins.some((allowed) => allowed.replace(/\/+$/, '') === normalizedOrigin);
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(normalizedOrigin) ||
+        staticAllowedOrigins.some((allowed) => allowed === normalizedOrigin) ||
+        /^https:\/\/quiz-master(-[a-z0-9-]+)?\.vercel\.app$/.test(normalizedOrigin) ||
+        /^https:\/\/[a-z0-9-]+\.vercel\.app$/.test(normalizedOrigin);
 
       if (isAllowed) {
         callback(null, true);
       } else {
-        callback(new Error(`CORS Error: Origin ${origin} is not allowed by CORS policy.`));
+        // Return callback(null, false) so cors middleware omits CORS headers without throwing an Express 500 error
+        callback(null, false);
       }
     },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    optionsSuccessStatus: 204,
   })
 );
 
