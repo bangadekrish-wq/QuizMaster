@@ -11,6 +11,8 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorState } from '../../components/common/ErrorState';
 import { ChevronLeft, ChevronRight, Send, GraduationCap, ArrowLeft } from 'lucide-react';
 
+import { getApiErrorMessage } from '../../utils/apiError';
+
 export const QuizAttemptPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -39,9 +41,7 @@ export const QuizAttemptPage = () => {
         setQuestions(data.questions || []);
       } catch (err) {
         setError(true);
-        setErrorMessage(
-          err.response?.data?.message || 'Unable to start quiz session. Please make sure you have attempts remaining.'
-        );
+        setErrorMessage(getApiErrorMessage(err));
       } finally {
         setLoading(false);
       }
