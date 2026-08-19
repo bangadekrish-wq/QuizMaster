@@ -27,6 +27,7 @@ app.use(helmet());
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://quiz-master-green-six.vercel.app',
+  'https://quizmaster-7ot7.onrender.com',
 ].filter(Boolean);
 
 app.use(
@@ -56,12 +57,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiLimiter);
 
+// Root API Endpoint
+app.get('/', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    message: 'QuizMaster API is running',
+    version: '1.0.0',
+  });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   return res.status(200).json({
     success: true,
-    message: 'QuizMaster API is running smoothly',
-    timestamp: new Date().toISOString(),
+    message: 'QuizMaster API is running',
   });
 });
 
