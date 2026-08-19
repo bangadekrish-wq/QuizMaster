@@ -22,44 +22,62 @@ export const startQuiz = async (req, res, next) => {
       return errorResponse(res, 'Quiz is not currently available for taking', 'QUIZ_UNAVAILABLE', 403);
     }
 
-    // 2. Check Maximum Attempts Limit
-    const { count: attemptCount } = await db
+    // 2. Check for an Active, Non-Expired IN_PROGRESS Attempt First (Session Reuse)
+    const { data: activeAttempt } = await db
       .from('attempts')
-      .select('id', { count: 'exact', head: true })
+      .select('*')
       .eq('quiz_id', quizId)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .eq('status', 'IN_PROGRESS')
+      .gt('expires_at', new Date().toISOString())
+      .order('started_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (attemptCount && attemptCount >= quiz.max_attempts) {
-      return errorResponse(
-        res,
-        `Maximum attempt limit reached (${quiz.max_attempts} attempts allowed)`,
-        'MAX_ATTEMPTS_REACHED',
-        400
-      );
-    }
+    let attempt = activeAttempt;
 
-    // 3. Calculate Started At and Expires At
-    const startedAt = new Date();
-    const durationMinutes = quiz.duration_minutes || 20;
-    const expiresAt = new Date(startedAt.getTime() + durationMinutes * 60 * 1000);
+    if (!attempt) {
+      // 3. Check Maximum Completed Attempts Limit
+      const { count: completedCount } = await db
+        .from('attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('quiz_id', quizId)
+        .eq('user_id', userId)
+        .eq('status', 'COMPLETED');
 
-    // 4. Create Attempt Record in DB
-    const { data: attempt, error: aErr } = await db
-      .from('attempts')
-      .insert([
-        {
-          quiz_id: quizId,
-          user_id: userId,
-          status: 'IN_PROGRESS',
-          started_at: startedAt.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        },
-      ])
-      .select()
-      .single();
+      if (completedCount && completedCount >= quiz.max_attempts) {
+        return errorResponse(
+          res,
+          `Maximum attempt limit reached (${quiz.max_attempts} attempts allowed)`,
+          'MAX_ATTEMPTS_REACHED',
+          400
+        );
+      }
 
-    if (aErr || !attempt) {
-      return errorResponse(res, 'Failed to initialize quiz attempt session', 'ATTEMPT_CREATION_FAILED', 500);
+      // 4. Calculate Started At and Expires At
+      const startedAt = new Date();
+      const durationMinutes = quiz.duration_minutes || 20;
+      const expiresAt = new Date(startedAt.getTime() + durationMinutes * 60 * 1000);
+
+      // Create new attempt record
+      const { data: newAttempt, error: aErr } = await db
+        .from('attempts')
+        .insert([
+          {
+            quiz_id: quizId,
+            user_id: userId,
+            status: 'IN_PROGRESS',
+            started_at: startedAt.toISOString(),
+            expires_at: expiresAt.toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (aErr || !newAttempt) {
+        return errorResponse(res, 'Failed to initialize quiz attempt session', 'ATTEMPT_CREATION_FAILED', 500);
+      }
+      attempt = newAttempt;
     }
 
     // 5. Fetch Questions & Options WITHOUT is_correct
@@ -71,6 +89,10 @@ export const startQuiz = async (req, res, next) => {
 
     if (questErr) {
       return errorResponse(res, 'Failed to load assessment question set', 'DATABASE_ERROR', 500);
+    }
+
+    if (!questions || questions.length === 0) {
+      return errorResponse(res, 'This quiz has no questions available', 'QUIZ_HAS_NO_QUESTIONS', 400);
     }
 
     const sanitizedQuestions = (questions || []).map((q) => ({
@@ -96,7 +118,7 @@ export const startQuiz = async (req, res, next) => {
         questions: sanitizedQuestions,
       },
       'Quiz attempt initialized successfully',
-      201
+      200
     );
   } catch (err) {
     next(err);
