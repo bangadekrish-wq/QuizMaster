@@ -40,8 +40,20 @@ import { SettingsPage as StudentSettingsPage } from '../pages/admin/SettingsPage
 // Route Guards
 import { AdminRoute, StudentRoute } from './ProtectedRoute';
 
+import { Loader2 } from 'lucide-react';
+
 const RootRedirect = () => {
-  const { isAuthenticated, role } = useAuth();
+  const { isAuthenticated, role, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-slate-100 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-brand-cyan animate-spin" />
+        <p className="text-sm font-medium text-slate-400">Loading QuizMaster...</p>
+      </div>
+    );
+  }
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   if (role === 'ADMIN') return <Navigate to="/admin/dashboard" replace />;
   return <Navigate to="/student/dashboard" replace />;

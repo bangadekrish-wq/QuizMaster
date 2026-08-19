@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { GraduationCap, Lock, Mail, User, UserPlus } from 'lucide-react';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const StudentRegister = () => {
   const { register: registerUser } = useAuth();
@@ -34,7 +35,7 @@ export const StudentRegister = () => {
       addToast('Student account created successfully! Welcome to QuizMaster.', 'success');
       navigate('/student/dashboard');
     } catch (err) {
-      setServerError(err.response?.data?.message || 'Registration failed. Please try again.');
+      setServerError(getApiErrorMessage(err));
     }
   };
 
@@ -111,9 +112,10 @@ export const StudentRegister = () => {
             className="w-full mt-2"
             size="lg"
             isLoading={isSubmitting}
+            disabled={isSubmitting}
             icon={UserPlus}
           >
-            Create Student Account
+            {isSubmitting ? 'Connecting to server...' : 'Create Student Account'}
           </Button>
         </form>
 

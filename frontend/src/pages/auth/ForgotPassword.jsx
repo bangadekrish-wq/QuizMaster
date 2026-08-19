@@ -5,6 +5,7 @@ import { authService } from '../../services/authService';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { GraduationCap, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const ForgotPassword = () => {
   const [submitted, setSubmitted] = useState(false);
@@ -22,7 +23,7 @@ export const ForgotPassword = () => {
       await authService.forgotPassword(data.email);
       setSubmitted(true);
     } catch (err) {
-      setServerError('Failed to send reset email. Please try again.');
+      setServerError(getApiErrorMessage(err));
     }
   };
 
@@ -67,8 +68,8 @@ export const ForgotPassword = () => {
               {...register('email', { required: 'Email address is required' })}
               error={errors.email?.message}
             />
-            <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting}>
-              Send Recovery Link
+            <Button type="submit" variant="primary" className="w-full" isLoading={isSubmitting} disabled={isSubmitting}>
+              {isSubmitting ? 'Connecting to server...' : 'Send Recovery Link'}
             </Button>
           </form>
         )}

@@ -21,15 +21,31 @@ dotenv.config();
 
 const app = express();
 
-// Security Middlewares - Flexible CORS for local Vite ports (5173, 5174, etc.)
 app.use(helmet());
+
+// CORS Configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://quiz-master-green-six.vercel.app',
+].filter(Boolean);
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || /^http:\/\/localhost:\d+$/.test(origin)) {
+      // Allow requests with no origin (such as mobile apps, curl, server-to-server)
+      if (!origin) return callback(null, true);
+
+      // Sanitize trailing slashes for clean matching
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      
+      const isAllowed =
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+        allowedOrigins.some((allowed) => allowed.replace(/\/+$/, '') === normalizedOrigin);
+
+      if (isAllowed) {
         callback(null, true);
       } else {
-        callback(null, true);
+        callback(new Error(`CORS Error: Origin ${origin} is not allowed by CORS policy.`));
       }
     },
     credentials: true,

@@ -7,6 +7,7 @@ import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { ShieldCheck, Lock, Mail, ArrowRight } from 'lucide-react';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const AdminLogin = () => {
   const { login } = useAuth();
@@ -28,11 +29,11 @@ export const AdminLogin = () => {
   const onSubmit = async (data) => {
     setServerError('');
     try {
-      const user = await login({ ...data, email: data.email.includes('admin') ? data.email : `admin_${data.email}` });
+      const user = await login({ email: data.email, password: data.password, isAdmin: true });
       addToast(`Administrator session initialized for ${user.name}`, 'success');
       navigate('/admin/dashboard');
     } catch (err) {
-      setServerError(err.response?.data?.message || 'Invalid administrator credentials.');
+      setServerError(getApiErrorMessage(err));
     }
   };
 
@@ -85,10 +86,11 @@ export const AdminLogin = () => {
             className="w-full mt-2"
             size="lg"
             isLoading={isSubmitting}
+            disabled={isSubmitting}
             icon={ArrowRight}
             iconPosition="right"
           >
-            Authenticate Admin
+            {isSubmitting ? 'Connecting to server...' : 'Authenticate Admin'}
           </Button>
         </form>
 

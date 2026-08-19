@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { Input } from '../../components/common/Input';
 import { Button } from '../../components/common/Button';
 import { GraduationCap, Lock, Mail, LogIn, ShieldCheck, UserCheck } from 'lucide-react';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const Login = () => {
   const { login } = useAuth();
@@ -38,7 +39,7 @@ export const Login = () => {
         navigate('/student/dashboard');
       }
     } catch (err) {
-      setServerError(err.response?.data?.message || 'Invalid email or password credentials');
+      setServerError(getApiErrorMessage(err));
     }
   };
 
@@ -131,9 +132,10 @@ export const Login = () => {
             className="w-full mt-2"
             size="lg"
             isLoading={isSubmitting}
+            disabled={isSubmitting}
             icon={LogIn}
           >
-            Sign In as {isAdminLogin ? 'Administrator' : 'Student'}
+            {isSubmitting ? 'Connecting to server...' : `Sign In as ${isAdminLogin ? 'Administrator' : 'Student'}`}
           </Button>
         </form>
 
